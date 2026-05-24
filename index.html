@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Drone Clicker - Кликай Дрона!</title>
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --card: #141b22;
+            --gold: #f0c040;
+            --gold-dark: #c49a20;
+            --accent: #3a7bd5;
+            --accent-glow: #5b9cf5;
+            --energy: #e04040;
+            --energy-bg: #2a1515;
+            --text: #e0dcc8;
+            --text-secondary: #9a9580;
+            --border: #2a3028;
+            --upgrade-bg: #1a1f28;
+            --particle: #f0c040;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            max-height: 850px;
+            background: linear-gradient(180deg, #0d1117 0%, #111820 30%, #0d1117 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border-radius: 0;
+            box-shadow: 0 0 60px rgba(58, 123, 213, 0.08);
+            overflow: hidden;
+        }
+
+        @media (min-width: 421px) {
+            .game-container {
+                border-radius: 24px;
+                height: 90vh;
+                margin: 20px;
+            }
+        }
+
+        /* ---- HEADER ---- */
+        .header {
+            padding: 16px 20px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .balance-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 10px 18px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .coin-icon {
+            width: 36px;
+            height: 36px;
+            background: radial-gradient(circle at 30% 30%, #f7d060, #c49a20);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 0 20px rgba(240, 192, 64, 0.4);
+            flex-shrink: 0;
+        }
+
+        .balance-amount {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--gold);
+            letter-spacing: -0.5px;
+            min-width: 60px;
+            text-align: right;
+            transition: transform 0.15s ease;
+        }
+        .balance-amount.pop {
+            transform: scale(1.2);
+            color: #ffe080;
+        }
+
+        .level-badge {
+            background: var(--accent);
+            color: #fff;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 20px rgba(58, 123, 213, 0.3);
+        }
+
+        /* ---- ENERGY BAR ---- */
+        .energy-section {
+            padding: 4px 20px 8px;
+            z-index: 10;
+        }
+        .energy-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .energy-bar-outer {
+            height: 8px;
+            background: var(--energy-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #2a2020;
+        }
+        .energy-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, #e04040, #f06050, #e04040);
+            border-radius: 10px;
+            transition: width 0.2s ease;
+            box-shadow: 0 0 8px rgba(224, 64, 64, 0.5);
+        }
+        .energy-bar-inner.low {
+            background: linear-gradient(90deg, #c03030, #e04040, #c03030);
+            animation: pulse-energy 0.8s infinite;
+        }
+        @keyframes pulse-energy {
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(224, 64, 64, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 18px rgba(255, 80, 60, 0.9);
+            }
+        }
+
+        /* ---- DRONE AREA ---- */
+        .drone-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 5;
+            cursor: pointer;
+            min-height: 280px;
+        }
+
+        .drone-wrapper {
+            position: relative;
+            transition: transform 0.08s ease-out;
+            filter: drop-shadow(0 20px 40px rgba(58, 123, 213, 0.35));
+        }
+        .drone-wrapper:active {
+            transform: scale(0.88);
+            filter: drop-shadow(0 30px 55px rgba(58, 123, 213, 0.6));
+        }
+        .drone-wrapper.pressed {
+            transform: scale(0.85);
+            filter: drop-shadow(0 30px 55px rgba(240, 192, 64, 0.7));
+        }
+
+        /* Drone SVG styles */
+        .drone-svg {
+            width: 180px;
+            height: 180px;
+            transition: all 0.3s ease;
+            animation: float-drone 3s ease-in-out infinite;
+        }
+        @keyframes float-drone {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-14px);
+            }
+        }
+        .drone-wrapper:active .drone-svg {
+            animation: none;
+            transform: translateY(5px) scale(0.9);
+        }
+        .drone-body {
+            fill: #2c3540;
+            stroke: #4a5568;
+            stroke-width: 2;
+        }
+        .drone-arm {
+            fill: #3a4555;
+            stroke: #556270;
+            stroke-width: 1.5;
+        }
+        .drone-propeller {
+            fill: #8899aa;
+            stroke: #aabbcc;
+            stroke-width: 1;
+            animation: spin-prop 0.3s linear infinite;
+            transform-origin: center;
+        }
+        .drone-camera {
+            fill: #1a1f28;
+            stroke: #3a7bd5;
+            stroke-width: 2;
+        }
+        .drone-lens {
+            fill: #3a7bd5;
+        }
+        .drone-led {
+            fill: #f04040;
+            animation: blink-led 1.5s ease-in-out infinite;
+        }
+        @keyframes spin-prop {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        @keyframes blink-led {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        /* ---- FLOATING TEXT ---- */
+        .float-text {
+            position: absolute;
+            pointer-events: none;
+            font-weight: 800;
+            font-size: 22px;
+            color: var(--gold);
+            z-index: 50;
+            animation: float-up 1s ease-out forwards;
+            text-shadow: 0 0 12px rgba(240, 192, 64, 0.7);
+            white-space: nowrap;
+        }
+        @keyframes float-up {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0.6);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-50px) scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-130px) scale(0.8);
+            }
+        }
+
+        /* ---- PARTICLES ---- */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            width: 8px;
+            height: 8px;
+            background: var(--particle);
+            border-radius: 50%;
+            z-index: 40;
+            animation: particle-burst 0.7s ease-out forwards;
+            box-shadow: 0 0 6px rgba(240, 192, 64, 0.8);
+        }
+        @keyframes particle-burst {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--dx), var(--dy)) scale(0);
+            }
+        }
+
+        /* ---- CLICK RIPPLE ---- */
+        .ripple {
+            position: absolute;
+            pointer-events: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(240, 192, 64, 0.7);
+            border-radius: 50%;
+            z-index: 30;
+            animation: ripple-out 0.6s ease-out forwards;
+        }
+        @keyframes ripple-out {
+            0% {
+                width: 20px;
+                height: 20px;
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            100% {
+                width: 180px;
+                height: 180px;
+                opacity: 0;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        /* ---- BOTTOM PANEL ---- */
+        .bottom-panel {
+            background: var(--card);
+            border-top: 1px solid var(--border);
+            padding: 14px 16px 20px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-radius: 20px 20px 0 0;
+        }
+        .panel-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+        .upgrades-row {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .upgrades-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .upgrade-card {
+            flex: 0 0 auto;
+            min-width: 100px;
+            background: var(--upgrade-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .upgrade-card:active {
+            transform: scale(0.94);
+            border-color: var(--gold-dark);
+            box-shadow: 0 0 20px rgba(240, 192, 64, 0.2);
+        }
+        .upgrade-card .icon {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+        .upgrade-card .name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+        .upgrade-card .cost {
+            font-size: 11px;
+            color: var(--gold);
+            font-weight: 600;
+        }
+        .upgrade-card .level-indicator {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .upgrade-card.affordable {
+            border-color: #4a6040;
+            animation: subtle-glow 2s ease-in-out infinite;
+        }
+        @keyframes subtle-glow {
+            0%,
+            100% {
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 18px rgba(240, 192, 64, 0.25);
+            }
+        }
+
+        /* ---- COMBO INDICATOR ---- */
+        .combo-indicator {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: 700;
+            color: #ff8040;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 10px rgba(255, 128, 64, 0.6);
+            letter-spacing: 1px;
+        }
+        .combo-indicator.active {
+            opacity: 1;
+            animation: combo-pop 0.5s ease-out;
+        }
+        @keyframes combo-pop {
+            0% {
+                transform: translateX(-50%) scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: translateX(-50%) scale(1.4);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-50%) scale(1);
+                opacity: 0.9;
+            }
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 360px) {
+            .drone-svg {
+                width: 140px;
+                height: 140px;
+            }
+            .upgrade-card {
+                min-width: 80px;
+                padding: 10px 8px;
+            }
+            .upgrade-card .icon {
+                font-size: 26px;
+            }
+            .balance-amount {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="gameContainer">
+        <!-- Header -->
+        <div class="header">
+            <div class="balance-display">
+                <div class="coin-icon">🪙</div>
+                <span class="balance-amount" id="balanceDisplay">0</span>
+            </div>
+            <div class="level-badge" id="levelBadge">Уровень 1</div>
+        </div>
+
+        <!-- Energy -->
+        <div class="energy-section">
+            <div class="energy-label">
+                <span>⚡ Энергия</span>
+                <span id="energyText">500 / 500</span>
+            </div>
+            <div class="energy-bar-outer">
+                <div class="energy-bar-inner" id="energyBar" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Drone Click Area -->
+        <div class="drone-area" id="droneArea">
+            <div class="combo-indicator" id="comboIndicator"></div>
+            <div class="drone-wrapper" id="droneWrapper">
+                <!-- Inline SVG Drone -->
+                <svg class="drone-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Shadow -->
+                    <ellipse cx="100" cy="175" rx="55" ry="8" fill="rgba(0,0,0,0.3)"/>
+                    <!-- Arms -->
+                    <rect class="drone-arm" x="30" y="68" width="140" height="8" rx="4"/>
+                    <rect class="drone-arm" x="68" y="30" width="8" height="140" rx="4"/>
+                    <!-- Motor housings -->
+                    <circle class="drone-body" cx="36" cy="36" r="14"/>
+                    <circle class="drone-body" cx="164" cy="36" r="14"/>
+                    <circle class="drone-body" cx="36" cy="164" r="14"/>
+                    <circle class="drone-body" cx="164" cy="164" r="14"/>
+                    <!-- Propellers -->
+                    <ellipse class="drone-propeller" cx="36" cy="28" rx="28" ry="5" opacity="0.7"/>
+                    <ellipse class="drone-propeller" cx="164" cy="28" rx="28" ry="5" opacity="0.7"/>
+                    <ellipse class="drone-propeller" cx="36" cy="172" rx="28" ry="5" opacity="0.7"/>
+                    <ellipse class="drone-propeller" cx="164" cy="172" rx="28" ry="5" opacity="0.7"/>
+                    <!-- Central body -->
+                    <rect class="drone-body" x="70" y="70" width="60" height="60" rx="16"/>
+                    <rect class="drone-body" x="78" y="78" width="44" height="44" rx="10" fill="#1e2630"/>
+                    <!-- Camera -->
+                    <circle class="drone-camera" cx="100" cy="108" r="12"/>
+                    <circle class="drone-lens" cx="100" cy="108" r="7"/>
+                    <circle cx="100" cy="108" r="3" fill="#fff" opacity="0.8"/>
+                    <!-- LED indicators -->
+                    <circle class="drone-led" cx="82" cy="82" r="3"/>
+                    <circle class="drone-led" cx="118" cy="82" r="3" animation-delay="0.5s"/>
+                    <!-- Landing gear -->
+                    <line x1="78" y1="130" x2="72" y2="148" stroke="#556270" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="122" y1="130" x2="128" y2="148" stroke="#556270" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Bottom Panel -->
+        <div class="bottom-panel">
+            <div class="panel-title">🚀 Улучшения</div>
+            <div class="upgrades-row" id="upgradesRow">
+                <!-- Cards generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---- GAME STATE ----
+            const state = {
+                balance: 0,
+                coinsPerClick: 1,
+                maxEnergy: 500,
+                energy: 500,
+                energyRegenRate: 3, // per second
+                level: 1,
+                totalClicks: 0,
+                comboCount: 0,
+                comboTimer: null,
+                comboThreshold: 800, // ms between clicks for combo
+                upgrades: {
+                    antenna: { level: 0, baseCost: 25, costMult: 1.6, name: 'Антенна', icon: '📡',
+                        effect: 'Усиление сигнала: +1 к клику' },
+                    battery: { level: 0, baseCost: 60, costMult: 1.8, name: 'Батарея', icon: '🔋',
+                        effect: 'Макс. энергия +100' },
+                    turbo: { level: 0, baseCost: 150, costMult: 2.0, name: 'Турбо', icon: '⚡',
+                    effect: 'Регенерация +1/сек' },
+                    autopilot: { level: 0, baseCost: 400, costMult: 2.2, name: 'Автопилот', icon: '🤖',
+                        effect: 'Автоклик: 1 раз/3 сек' },
+                },
+                autoClickInterval: null,
+                autoClickSpeed: 3000,
+            };
+
+            // ---- DOM ELEMENTS ----
+            const balanceDisplay = document.getElementById('balanceDisplay');
+            const energyBar = document.getElementById('energyBar');
+            const energyText = document.getElementById('energyText');
+            const levelBadge = document.getElementById('levelBadge');
+            const droneArea = document.getElementById('droneArea');
+            const droneWrapper = document.getElementById('droneWrapper');
+            const comboIndicator = document.getElementById('comboIndicator');
+            const upgradesRow = document.getElementById('upgradesRow');
+
+            // ---- FUNCTIONS ----
+            function getUpgradeCost(upgradeKey) {
+                const u = state.upgrades[upgradeKey];
+                return Math.floor(u.baseCost * Math.pow(u.costMult, u.level));
+            }
+
+            function updateUI() {
+                // Balance
+                balanceDisplay.textContent = formatNumber(state.balance);
+
+                // Energy
+                const pct = (state.energy / state.maxEnergy) * 100;
+                energyBar.style.width = pct + '%';
+                energyText.textContent = `${Math.floor(state.energy)} / ${state.maxEnergy}`;
+
+                if (pct < 20) {
+                    energyBar.classList.add('low');
+                } else {
+                    energyBar.classList.remove('low');
+                }
+
+                // Level
+                levelBadge.textContent = `Уровень ${state.level}`;
+
+                // Upgrade cards
+                renderUpgradeCards();
+            }
+
+            function formatNumber(num) {
+                if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M';
+                if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K';
+                return Math.floor(num).toString();
+            }
+
+            function renderUpgradeCards() {
+                upgradesRow.innerHTML = '';
+                for (const [key, u] of Object.entries(state.upgrades)) {
+                    const cost = getUpgradeCost(key);
+                    const affordable = state.balance >= cost;
+                    const card = document.createElement('div');
+                    card.className = 'upgrade-card' + (affordable ? ' affordable' : '');
+                    card.innerHTML = `
+                        <div class="icon">${u.icon}</div>
+                        <div class="name">${u.name}</div>
+                        <div class="cost">💰 ${formatNumber(cost)}</div>
+                        <div class="level-indicator">Ур. ${u.level} | ${u.effect.split(':')[0]}</div>
+                    `;
+                    card.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        purchaseUpgrade(key);
+                    });
+                    upgradesRow.appendChild(card);
+                }
+            }
+
+            function purchaseUpgrade(key) {
+                const cost = getUpgradeCost(key);
+                if (state.balance < cost) return;
+                if (state.energy <= 0 && key !== 'battery') return; // still allow battery purchase
+
+                state.balance -= cost;
+                state.upgrades[key].level++;
+
+                // Apply upgrade effects
+                switch (key) {
+                    case 'antenna':
+                        state.coinsPerClick += 1;
+                        break;
+                    case 'battery':
+                        state.maxEnergy += 100;
+                        state.energy = Math.min(state.energy + 100, state.maxEnergy);
+                        break;
+                    case 'turbo':
+                        state.energyRegenRate += 1;
+                        break;
+                    case 'autopilot':
+                        setupAutoClick();
+                        break;
+                }
+
+                // Flash balance
+                balanceDisplay.classList.add('pop');
+                setTimeout(() => balanceDisplay.classList.remove('pop'), 150);
+
+                updateUI();
+                spawnFloatText(droneArea, `🎉 +${u.name}!`, '#ff8040');
+            }
+
+            function setupAutoClick() {
+                const autoLevel = state.upgrades.autopilot.level;
+                if (autoLevel >= 1 && !state.autoClickInterval) {
+                    state.autoClickInterval = setInterval(() => {
+                        if (state.energy >= state.coinsPerClick) {
+                            performClick(droneWrapper, true);
+                        }
+                    }, state.autoClickSpeed);
+                }
+                if (autoLevel >= 2) state.autoClickSpeed = 2200;
+                if (autoLevel >= 3) state.autoClickSpeed = 1500;
+                if (autoLevel >= 5) state.autoClickSpeed = 900;
+
+                if (state.autoClickInterval) {
+                    clearInterval(state.autoClickInterval);
+                    state.autoClickInterval = setInterval(() => {
+                        if (state.energy >= state.coinsPerClick) {
+                            performClick(droneWrapper, true);
+                        }
+                    }, state.autoClickSpeed);
+                }
+            }
+
+            function performClick(targetElement, isAuto = false) {
+                if (state.energy < state.coinsPerClick) {
+                    if (!isAuto) {
+                        // Shake drone to indicate no energy
+                        targetElement.style.animation = 'none';
+                        targetElement.offsetHeight;
+                        targetElement.style.animation = 'shake 0.4s ease';
+                        setTimeout(() => {
+                            targetElement.style.animation = '';
+                        }, 400);
+                    }
+                    return;
+                }
+
+                // Deduct energy
+                state.energy -= state.coinsPerClick;
+                state.energy = Math.max(0, state.energy);
+
+                // Add coins
+                state.balance += state.coinsPerClick;
+                state.totalClicks++;
+
+                // Combo system
+                if (!isAuto) {
+                    state.comboCount++;
+                    clearTimeout(state.comboTimer);
+                    if (state.comboCount >= 5 && state.comboCount % 5 === 0) {
+                        const bonusCoins = Math.floor(state.coinsPerClick * state.comboCount * 0.5);
+                        state.balance += bonusCoins;
+                        state.energy = Math.min(state.energy + Math.floor(bonusCoins * 0.3), state.maxEnergy);
+                        showCombo(state.comboCount, bonusCoins);
+                    }
+                    state.comboTimer = setTimeout(() => {
+                        state.comboCount = 0;
+                        comboIndicator.classList.remove('active');
+                    }, state.comboThreshold);
+                }
+
+                // Level up
+                const newLevel = Math.floor(state.totalClicks / 50) + 1;
+                if (newLevel > state.level) {
+                    state.level = newLevel;
+                    state.maxEnergy += 30;
+                    state.energy = Math.min(state.energy + 30, state.maxEnergy);
+                    state.coinsPerClick += 1;
+                    spawnFloatText(droneArea, '⬆ Уровень!', '#5b9cf5');
+                }
+
+                // Visual effects
+                if (!isAuto) {
+                    targetElement.classList.add('pressed');
+                    setTimeout(() => targetElement.classList.remove('pressed'), 100);
+                }
+
+                spawnFloatText(targetElement, `+${state.coinsPerClick}`, '#f0c040');
+                spawnParticles(targetElement);
+                if (!isAuto) spawnRipple(targetElement);
+
+                updateUI();
+            }
+
+            function showCombo(count, bonus) {
+                comboIndicator.textContent = `🔥 КОМБО x${count}! +${bonus}`;
+                comboIndicator.classList.remove('active');
+                void comboIndicator.offsetWidth;
+                comboIndicator.classList.add('active');
+                setTimeout(() => comboIndicator.classList.remove('active'), 1800);
+                spawnFloatText(droneArea, `+${bonus} БОНУС!`, '#ff6040');
+            }
+
+            function spawnFloatText(parent, text, color) {
+                const el = document.createElement('span');
+                el.className = 'float-text';
+                el.textContent = text;
+                el.style.color = color;
+                el.style.textShadow = `0 0 12px ${color}`;
+                const rect = parent.getBoundingClientRect();
+                const parentRect = parent.parentElement.getBoundingClientRect();
+                const x = rect.left - parentRect.left + rect.width / 2 + (Math.random() - 0.5) * 80;
+                const y = rect.top - parentRect.top + rect.height / 2 - 20;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                parent.appendChild(el);
+                el.addEventListener('animationend', () => el.remove());
+            }
+
+            function spawnParticles(parent) {
+                const rect = parent.getBoundingClientRect();
+                const parentRect = parent.parentElement.getBoundingClientRect();
+                const cx = rect.left - parentRect.left + rect.width / 2;
+                const cy = rect.top - parentRect.top + rect.height / 2;
+                const count = 10;
+                for (let i = 0; i < count; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'particle';
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 40 + Math.random() * 60;
+                    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+                    p.style.left = cx + 'px';
+                    p.style.top = cy + 'px';
+                    p.style.width = (4 + Math.random() * 8) + 'px';
+                    p.style.height = p.style.width;
+                    p.style.background = Math.random() > 0.5 ? '#f0c040' : '#ffeaa0';
+                    parent.appendChild(p);
+                    p.addEventListener('animationend', () => p.remove());
+                }
+            }
+
+            function spawnRipple(parent) {
+                const rect = parent.getBoundingClientRect();
+                const parentRect = parent.parentElement.getBoundingClientRect();
+                const cx = rect.left - parentRect.left + rect.width / 2;
+                const cy = rect.top - parentRect.top + rect.height / 2;
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple';
+                ripple.style.left = cx + 'px';
+                ripple.style.top = cy + 'px';
+                parent.appendChild(ripple);
+                ripple.addEventListener('animationend', () => ripple.remove());
+            }
+
+            // ---- ENERGY REGENERATION ----
+            function regenEnergy() {
+                if (state.energy < state.maxEnergy) {
+                    state.energy = Math.min(state.maxEnergy, state.energy + state.energyRegenRate / 10);
+                    updateUI();
+                }
+            }
+            setInterval(regenEnergy, 100);
+
+            // ---- CLICK HANDLER ----
+            droneArea.addEventListener('pointerdown', function(e) {
+                e.preventDefault();
+                performClick(droneWrapper, false);
+            });
+
+            // Prevent double-tap zoom on drone
+            droneArea.addEventListener('touchstart', function(e) {
+                if (e.touches.length > 1) e.preventDefault();
+            }, { passive: false });
+
+            // ---- KEYBOARD SUPPORT ----
+            document.addEventListener('keydown', function(e) {
+                if (e.code === 'Space' || e.code === 'KeyC') {
+                    e.preventDefault();
+                    performClick(droneWrapper, false);
+                }
+            });
+
+            // ---- SHAKE ANIMATION (for no-energy) ----
+            const shakeStyle = document.createElement('style');
+            shakeStyle.textContent = `
+                @keyframes shake {
+                    0%,100% { transform: translateX(0); }
+                    20% { transform: translateX(-6px); }
+                    40% { transform: translateX(6px); }
+                    60% { transform: translateX(-4px); }
+                    80% { transform: translateX(4px); }
+                }
+            `;
+            document.head.appendChild(shakeStyle);
+
+            // ---- INIT ----
+            updateUI();
+            renderUpgradeCards();
+
+            console.log('🚁 Drone Clicker готов!');
+            console.log('   Кликай на дрона | Пробел / C | Покупай улучшения');
+            console.log('   💡 Совет: кликай быстро для комбо-бонусов!');
+        })();
+    </script>
+</body>
+</html>
